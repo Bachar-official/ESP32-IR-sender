@@ -5,9 +5,9 @@
 #include "ESPAsyncWebServer.h"
 #include "Conditioner.h"
 
-#define WIFI_SSID "SSID"
-#define WIFI_PASS "PASSWORD"
-#define HOSTNAME "NAME"
+#define WIFI_SSID "wifi"
+#define WIFI_PASS "password"
+#define HOSTNAME "hostname"
 #define PORT 80
 #define SERVER_PORT 1337
 #define UDP_PORT 4210
@@ -25,7 +25,7 @@ uint16_t profileFan[73] = {9030,4420, 530,1670, 530,1670, 530,570, 530,1670, 530
 
 WiFiUDP udp;
 AsyncWebServer server(SERVER_PORT);
-Conditioner cond("Your Name", 300, WiFi.localIP().toString() + ":" + String(SERVER_PORT, DEC));
+Conditioner cond("Kitchen", 300, WiFi.localIP().toString() + ":" + String(SERVER_PORT, DEC));
 char incomingPacket[255]; //buffer for incoming packets
 String ping = "ping"; // answer for this message
 
@@ -61,8 +61,10 @@ void setup() {
   server.on("/set", HTTP_GET, [](AsyncWebServerRequest * request) {
     int profile = 0;
     String date = "";
+    String user = "";
     AsyncWebParameter* p0 = request->getParam(0);
     AsyncWebParameter* p1 = request->getParam(1);
+    AsyncWebParameter* p2 = request->getParam(2);
     if (p0->name() == "profile") {
       profile = p0->value().toInt();
       sendProfile(profile);
@@ -72,14 +74,24 @@ void setup() {
       date = p1->value();
       cond.setDate(date);
     }
+    if (p2->name() == "user") {
+      user = p2->value();
+      cond.setUser(user);
+    }
   });
 
   server.on("/off", HTTP_GET, [](AsyncWebServerRequest * request) {
     String date = "";
+    String user = "";
     AsyncWebParameter* p0 = request->getParam(0);
+    AsyncWebParameter* p1 = request->getParam(1);
     if (p0->name() == "date") {
       date = p0->value();
       cond.setDate(date);
+    }
+    if (p1->name() == "user") {
+      user = p1->value();
+      cond.setUser(user);
     }
     IrSender.sendRaw(profileOff, sizeof(profileOff) / sizeof(profileOff[0]), 38);
     request->send(200, "application/json", cond.operation(300));
